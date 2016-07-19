@@ -1,0 +1,17 @@
+import io.gravitee.alerter.model.healthcheck.HealtcheckEvent
+import java.text.MessageFormat
+
+declare HealtcheckEvent
+    @role( event )
+    @timestamp( date )
+end
+
+rule "Dump event"
+when
+    $s : HealtcheckEvent() from entry-point HealtcheckEvent
+then
+    	System.out.println( MessageFormat.format( "[{0,time,full}] @{1} - {2}",
+        	                                      $s.getDate(),
+            	                                  $s.getApi(),
+                	                              $s.getStatus() ) );
+end

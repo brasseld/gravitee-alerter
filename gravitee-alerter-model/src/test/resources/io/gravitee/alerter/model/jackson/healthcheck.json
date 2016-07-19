@@ -1,0 +1,9 @@
+{
+  "date": 1468444478204,
+  "type": "healthcheck",
+
+  "api": "my-api",
+  "endpoint": "http://localhost:9099",
+  "status": "DOWN",
+  "response_time": 10000
+}

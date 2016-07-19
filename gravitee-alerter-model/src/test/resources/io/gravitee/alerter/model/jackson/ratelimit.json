@@ -1,0 +1,11 @@
+{
+  "date": "",
+  "type": "ratelimit",
+
+  "api": "my-api",
+  "application": "my-application",
+  "api-key": "123456789",
+  "remaining": 120,
+  "limit": 1000,
+  "percent": 20
+}
