@@ -16,9 +16,3 @@ then
             	                                  $s.getApi(),
                 	                              $s.getStatus() ) );
 end
-rule "Dump event3"
-when
-
-then
-    	System.out.println("coco out");
-end
