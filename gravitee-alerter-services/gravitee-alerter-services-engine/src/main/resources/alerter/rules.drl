@@ -1,5 +1,6 @@
-import io.gravitee.alerter.model.healthcheck.HealtcheckEvent
-import java.text.MessageFormat
+package alerter;
+import io.gravitee.alerter.model.healthcheck.HealtcheckEvent;
+import java.text.MessageFormat;
 
 declare HealtcheckEvent
     @role( event )
@@ -8,10 +9,16 @@ end
 
 rule "Dump event"
 when
-    $s : HealtcheckEvent() from entry-point HealtcheckEvent
+    $s : HealtcheckEvent() from entry-point "HealtcheckEvent"
 then
     	System.out.println( MessageFormat.format( "[{0,time,full}] @{1} - {2}",
         	                                      $s.getDate(),
             	                                  $s.getApi(),
                 	                              $s.getStatus() ) );
+end
+rule "Dump event3"
+when
+
+then
+    	System.out.println("coco out");
 end

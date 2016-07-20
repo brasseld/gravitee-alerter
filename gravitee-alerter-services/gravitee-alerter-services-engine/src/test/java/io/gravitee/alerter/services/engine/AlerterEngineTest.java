@@ -61,5 +61,10 @@ public class AlerterEngineTest {
                 return EventType.FIRE_EVENT;
             }
         });
+        try {
+            Thread.sleep(4000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 }

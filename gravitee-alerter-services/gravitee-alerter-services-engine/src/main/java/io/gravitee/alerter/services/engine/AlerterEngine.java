@@ -19,19 +19,14 @@ import io.gravitee.alerter.model.Event;
 import io.gravitee.alerter.model.EventType;
 import io.gravitee.common.event.EventListener;
 import io.gravitee.common.service.AbstractService;
-import org.kie.api.KieBase;
 import org.kie.api.KieBaseConfiguration;
 import org.kie.api.KieServices;
-import org.kie.api.builder.KieBuilder;
-import org.kie.api.builder.KieFileSystem;
-import org.kie.api.builder.Message;
-import org.kie.api.builder.Results;
 import org.kie.api.conf.EventProcessingOption;
-import org.kie.api.io.Resource;
-import org.kie.api.io.ResourceType;
+import org.kie.api.event.rule.*;
 import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
 import org.kie.api.runtime.rule.EntryPoint;
+import org.kie.api.runtime.rule.FactHandle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,31 +50,81 @@ public class AlerterEngine extends AbstractService implements EventListener<Even
     protected void doStart() throws Exception {
         super.doStart();
 
-        KieServices kieServices = KieServices.Factory.get();
-        KieFileSystem kFileSystem = kieServices.newKieFileSystem();
+        KieServices ks = KieServices.Factory.get();
+        KieContainer kieContainer = ks.getKieClasspathContainer();
 
-        Resource resource = kieServices.getResources()
-                .newClassPathResource("io/gravitee/alerter/services/engine/rules.drl", AlerterEngine.class)
-                .setResourceType(ResourceType.DRL);
-
-        kFileSystem.write(resource);
-
-        KieBuilder kieBuilder = kieServices.newKieBuilder(kFileSystem).buildAll();
-        Results results = kieBuilder.getResults();
-        if( results.hasMessages( Message.Level.ERROR ) ){
-            System.out.println( results.getMessages() );
-            throw new IllegalStateException( "### errors ###" );
-        }
-
-        KieContainer kieContainer =
-                kieServices.newKieContainer(kieServices.getRepository().getDefaultReleaseId());
-
-        KieBaseConfiguration config = kieServices.newKieBaseConfiguration();
+        KieBaseConfiguration config = ks.newKieBaseConfiguration();
         config.setOption(EventProcessingOption.STREAM);
 
-        KieBase kieBase = kieContainer.newKieBase(config);
-        kieSession = kieBase.newKieSession();
 
+        kieSession = kieContainer.newKieSession("alerter-session");
+
+        kieSession.addEventListener(new RuleRuntimeEventListener() {
+            public void objectInserted(ObjectInsertedEvent event) {
+                System.out.println("Object inserted \n"
+                        + event.getObject().toString());
+            }
+
+            public void objectUpdated(ObjectUpdatedEvent event) {
+                System.out.println("Object was updated \n"
+                        + "new Content \n" + event.getObject().toString());
+            }
+
+            public void objectDeleted(ObjectDeletedEvent event) {
+                System.out.println("Object retracted \n"
+                        + event.getOldObject().toString());
+            }
+        });
+
+        kieSession.addEventListener(new AgendaEventListener() {
+            public void matchCreated(MatchCreatedEvent event) {
+                System.out.println("The rule "
+                        + event.getMatch().getRule().getName()
+                        + " can be fired in agenda");
+            }
+
+            public void matchCancelled(MatchCancelledEvent event) {
+                System.out.println("The rule "
+                        + event.getMatch().getRule().getName()
+                        + " cannot b in agenda");
+            }
+
+            public void beforeMatchFired(BeforeMatchFiredEvent event) {
+                System.out.println("The rule "
+                        + event.getMatch().getRule().getName()
+                        + " will be fired");
+            }
+
+            public void afterMatchFired(AfterMatchFiredEvent event) {
+                System.out.println("The rule "
+                        + event.getMatch().getRule().getName()
+                        + " has be fired");
+            }
+
+            public void agendaGroupPopped(AgendaGroupPoppedEvent event) {
+
+            }
+
+            public void agendaGroupPushed(AgendaGroupPushedEvent event) {
+
+            }
+
+            public void beforeRuleFlowGroupActivated(RuleFlowGroupActivatedEvent event) {
+
+            }
+
+            public void afterRuleFlowGroupActivated(RuleFlowGroupActivatedEvent event) {
+
+            }
+
+            public void beforeRuleFlowGroupDeactivated(RuleFlowGroupDeactivatedEvent event) {
+
+            }
+
+            public void afterRuleFlowGroupDeactivated(RuleFlowGroupDeactivatedEvent event) {
+
+            }
+        });
         new Thread() {
 
             @Override
@@ -104,10 +149,12 @@ public class AlerterEngine extends AbstractService implements EventListener<Even
 
             EntryPoint eventStream = kieSession.getEntryPoint(streamName);
             if (eventStream != null) {
-                eventStream.insert(event.content());
+                FactHandle toto = eventStream.insert(event.content());
+                System.out.println("Facthandle="+toto.toExternalForm());
             } else {
                 LOGGER.warn("An event has been received from an unknown stream: {}", streamName);
             }
+
         }
     }
 }
