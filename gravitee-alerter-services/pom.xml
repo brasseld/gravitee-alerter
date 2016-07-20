@@ -17,23 +17,32 @@
 
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-	<parent>
-		<groupId>io.gravitee.alerter</groupId>
-		<artifactId>gravitee-alerter</artifactId>
-		<version>0.1.0-SNAPSHOT</version>
-	</parent>
+    <parent>
+        <groupId>io.gravitee.alerter</groupId>
+        <artifactId>gravitee-alerter</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
 
-	<groupId>io.gravitee.alerter.services</groupId>
-	<artifactId>gravitee-alerter-services</artifactId>
-	<packaging>pom</packaging>
+    <groupId>io.gravitee.alerter.services</groupId>
+    <artifactId>gravitee-alerter-services</artifactId>
+    <packaging>pom</packaging>
 
-	<name>Gravitee IO - Alerter - Services</name>
+    <name>Gravitee IO - Alerter - Services</name>
 
-	<modules>
-		<module>gravitee-alerter-services-engine</module>
-		<module>gravitee-alerter-services-core</module>
-	</modules>
+    <modules>
+        <module>gravitee-alerter-services-engine</module>
+        <module>gravitee-alerter-services-core</module>
+    </modules>
+
+    <dependencies>
+        <!-- Spring -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+    </dependencies>
 </project>

@@ -17,23 +17,25 @@ package io.gravitee.alerter.services.engine;
 
 import io.gravitee.alerter.model.Event;
 import io.gravitee.alerter.model.EventType;
+import io.gravitee.alerter.services.engine.contract.Rule;
+import io.gravitee.alerter.services.engine.drools.AgendaEventListenerLogger;
+import io.gravitee.alerter.services.engine.drools.RuleRuntimeEventListenerLogger;
 import io.gravitee.common.event.EventListener;
 import io.gravitee.common.service.AbstractService;
-import org.kie.api.KieBase;
 import org.kie.api.KieBaseConfiguration;
 import org.kie.api.KieServices;
-import org.kie.api.builder.KieBuilder;
-import org.kie.api.builder.KieFileSystem;
-import org.kie.api.builder.Message;
-import org.kie.api.builder.Results;
 import org.kie.api.conf.EventProcessingOption;
-import org.kie.api.io.Resource;
-import org.kie.api.io.ResourceType;
+import org.kie.api.runtime.Globals;
 import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
 import org.kie.api.runtime.rule.EntryPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author David BRASSELY (david.brassely at graviteesource.com)
@@ -46,6 +48,11 @@ public class AlerterEngine extends AbstractService implements EventListener<Even
 
     private KieSession kieSession;
 
+    private AlertService alertService;
+
+    private ExecutorService droolsThread;
+    private Future fireUntilHaltResult;
+
     @Override
     protected String name() {
         return SERVICE_NAME;
@@ -55,45 +62,37 @@ public class AlerterEngine extends AbstractService implements EventListener<Even
     protected void doStart() throws Exception {
         super.doStart();
 
-        KieServices kieServices = KieServices.Factory.get();
-        KieFileSystem kFileSystem = kieServices.newKieFileSystem();
+        KieServices ks = KieServices.Factory.get();
+        KieContainer kieContainer = ks.getKieClasspathContainer();
 
-        Resource resource = kieServices.getResources()
-                .newClassPathResource("io/gravitee/alerter/services/engine/rules.drl", AlerterEngine.class)
-                .setResourceType(ResourceType.DRL);
-
-        kFileSystem.write(resource);
-
-        KieBuilder kieBuilder = kieServices.newKieBuilder(kFileSystem).buildAll();
-        Results results = kieBuilder.getResults();
-        if( results.hasMessages( Message.Level.ERROR ) ){
-            System.out.println( results.getMessages() );
-            throw new IllegalStateException( "### errors ###" );
-        }
-
-        KieContainer kieContainer =
-                kieServices.newKieContainer(kieServices.getRepository().getDefaultReleaseId());
-
-        KieBaseConfiguration config = kieServices.newKieBaseConfiguration();
+        KieBaseConfiguration config = ks.newKieBaseConfiguration();
         config.setOption(EventProcessingOption.STREAM);
 
-        KieBase kieBase = kieContainer.newKieBase(config);
-        kieSession = kieBase.newKieSession();
+        kieSession = kieContainer.newKieSession("alerter-session");
 
-        new Thread() {
+        kieSession.addEventListener(new RuleRuntimeEventListenerLogger());
+        kieSession.addEventListener(new AgendaEventListenerLogger());
 
-            @Override
-            public void run() {
-                kieSession.fireUntilHalt();
-            }
-        }.start();
+        Globals globals = kieSession.getGlobals();
+        globals.set("alerterService", alertService);
+
+        droolsThread = Executors.newSingleThreadExecutor();
+        fireUntilHaltResult = droolsThread.submit(() -> kieSession.fireUntilHalt());
     }
 
     @Override
     protected void doStop() throws Exception {
         super.doStop();
 
-        kieSession.destroy();
+        if (kieSession != null) {
+            kieSession.halt();
+
+            // wait for the engine to finish and throw exception if any was thrown in engine's thread
+            fireUntilHaltResult.get(60000, TimeUnit.SECONDS);
+            droolsThread.shutdown();
+
+            kieSession.destroy();
+        }
     }
 
     @Override
@@ -108,6 +107,15 @@ public class AlerterEngine extends AbstractService implements EventListener<Even
             } else {
                 LOGGER.warn("An event has been received from an unknown stream: {}", streamName);
             }
+
         }
+    }
+
+    public void insertRule(Rule rule) {
+        kieSession.insert(rule);
+    }
+
+    public void setAlertService(AlertService alertService) {
+        this.alertService = alertService;
     }
 }

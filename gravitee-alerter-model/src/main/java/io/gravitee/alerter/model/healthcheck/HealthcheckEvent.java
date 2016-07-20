@@ -22,7 +22,7 @@ import io.gravitee.alerter.model.Event;
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-public class HealtcheckEvent extends Event {
+public class HealthcheckEvent extends Event {
 
     private String api;
 

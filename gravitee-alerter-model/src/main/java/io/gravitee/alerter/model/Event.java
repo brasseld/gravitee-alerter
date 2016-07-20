@@ -18,7 +18,7 @@ package io.gravitee.alerter.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.gravitee.alerter.model.healthcheck.HealtcheckEvent;
+import io.gravitee.alerter.model.healthcheck.HealthcheckEvent;
 
 import java.util.Date;
 
@@ -31,7 +31,7 @@ import java.util.Date;
         include = JsonTypeInfo.As.PROPERTY,
         property = "type")
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = HealtcheckEvent.class, name = "healthcheck")
+        @JsonSubTypes.Type(value = HealthcheckEvent.class, name = "healthcheck")
 })
 public abstract class Event {
 

@@ -13,24 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gravitee.alerter.model.jackson.healthcheck;
+package io.gravitee.alerter.services.engine;
 
-import io.gravitee.alerter.model.healthcheck.HealthcheckEvent;
-import io.gravitee.alerter.model.jackson.AbstractTest;
-import org.junit.Assert;
-import org.junit.Test;
+import io.gravitee.alerter.services.engine.contract.healthcheck.alert.Alert;
 
 /**
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-public class HealthcheckSerializer extends AbstractTest {
+public interface AlertService {
 
-    @Test
-    public void should_serialize_healthcheck() throws Exception {
-        HealthcheckEvent healthcheckEvent = load("/io/gravitee/alerter/model/jackson/healthcheck.json", HealthcheckEvent.class);
-
-        String generatedJsonDefinition = objectMapper().writeValueAsString(healthcheckEvent);
-        Assert.assertNotNull(generatedJsonDefinition);
-    }
+    void send(Alert alert);
 }

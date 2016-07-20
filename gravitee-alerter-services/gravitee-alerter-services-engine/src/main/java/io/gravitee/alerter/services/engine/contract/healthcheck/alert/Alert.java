@@ -13,24 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gravitee.alerter.model.jackson.healthcheck;
+package io.gravitee.alerter.services.engine.contract.healthcheck.alert;
 
-import io.gravitee.alerter.model.healthcheck.HealthcheckEvent;
-import io.gravitee.alerter.model.jackson.AbstractTest;
-import org.junit.Assert;
-import org.junit.Test;
+import io.gravitee.common.utils.UUID;
+
+import java.util.Date;
 
 /**
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-public class HealthcheckSerializer extends AbstractTest {
+public abstract class Alert {
 
-    @Test
-    public void should_serialize_healthcheck() throws Exception {
-        HealthcheckEvent healthcheckEvent = load("/io/gravitee/alerter/model/jackson/healthcheck.json", HealthcheckEvent.class);
+    private final Date date = new Date();
 
-        String generatedJsonDefinition = objectMapper().writeValueAsString(healthcheckEvent);
-        Assert.assertNotNull(generatedJsonDefinition);
+    private final String id = UUID.toString(UUID.random());
+
+    public Date getDate() {
+        return date;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    @Override
+    public String toString() {
+        return "Alert{" +
+                "date=" + date +
+                ", id='" + id + '\'' +
+                '}';
     }
 }

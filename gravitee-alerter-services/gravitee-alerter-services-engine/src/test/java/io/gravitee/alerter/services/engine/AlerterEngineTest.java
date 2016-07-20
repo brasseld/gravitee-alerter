@@ -15,14 +15,15 @@
  */
 package io.gravitee.alerter.services.engine;
 
+import io.gravitee.alerter.model.Event;
 import io.gravitee.alerter.model.EventType;
-import io.gravitee.alerter.model.healthcheck.HealtcheckEvent;
-import io.gravitee.common.event.Event;
+import io.gravitee.alerter.services.engine.contract.Rule;
+import io.gravitee.alerter.services.engine.contract.healthcheck.alert.Alert;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Test;
+import org.mockito.Spy;
 
-import java.util.Date;
+import static org.mockito.MockitoAnnotations.initMocks;
 
 /**
  * @author David BRASSELY (david.brassely at graviteesource.com)
@@ -32,8 +33,13 @@ public class AlerterEngineTest {
 
     private final AlerterEngine engine = new AlerterEngine();
 
+    @Spy
+    protected AlertService alertService = new ConsoleAlertService();
+
     @Before
     public void setUp() throws Exception {
+        initMocks(this);
+        engine.setAlertService(alertService);
         engine.doStart();
     }
 
@@ -42,18 +48,11 @@ public class AlerterEngineTest {
         engine.doStop();
     }
 
-    @Test
-    public void test_healthcheck() {
-        engine.onEvent(new Event<EventType, io.gravitee.alerter.model.Event>() {
+    protected void sendEvent(final Event event) {
+        engine.onEvent(new io.gravitee.common.event.Event<EventType, Event>() {
             @Override
-            public io.gravitee.alerter.model.Event content() {
-                HealtcheckEvent evt = new HealtcheckEvent();
-
-                evt.setDate(new Date());
-                evt.setApi("my-api");
-                evt.setResponseTime(10000);
-                evt.setStatus(HealtcheckEvent.Status.DOWN);
-                return evt;
+            public Event content() {
+                return event;
             }
 
             @Override
@@ -61,5 +60,26 @@ public class AlerterEngineTest {
                 return EventType.FIRE_EVENT;
             }
         });
+    }
+
+    protected void addRule(final Rule rule) {
+        engine.insertRule(rule);
+    }
+
+    protected void fireAndWait() {
+        try {
+            // give time to fireUntilHalt to process the insertions
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private class ConsoleAlertService implements AlertService {
+
+        @Override
+        public void send(Alert alert) {
+            System.out.println(alert);
+        }
     }
 }

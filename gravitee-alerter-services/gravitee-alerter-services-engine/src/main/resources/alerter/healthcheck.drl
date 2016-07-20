@@ -1,0 +1,67 @@
+package alerter;
+
+import io.gravitee.alerter.model.healthcheck.HealthcheckEvent;
+import io.gravitee.alerter.services.engine.contract.healthcheck.ConsecutiveFailuresRule
+import io.gravitee.alerter.services.engine.contract.healthcheck.ResponseTimeExceededRule
+import io.gravitee.alerter.services.engine.contract.healthcheck.alert.ConsecutiveFailureAlert
+import io.gravitee.alerter.services.engine.contract.healthcheck.alert.StateChangedAlert
+import io.gravitee.alerter.services.engine.contract.healthcheck.alert.ResponseTimeExceededAlert;
+
+global io.gravitee.alerter.services.engine.AlertService alerterService;
+
+declare HealthcheckEvent
+    @role( event )
+    @expires( 5m )
+    @timestamp( date )
+end
+
+declare window ConsecutiveFailuresWindow
+    HealthcheckEvent()
+        over window:time(1m)
+        from entry-point "HealtcheckEvent"
+end
+
+rule "Send an alert in case of x consecutive failures for an API (and for a given slicing window)"
+when
+    $rule: ConsecutiveFailuresRule($api: api, $endpoint: endpoint, $failure: failure)
+    $count: Number($cnt : intValue, intValue >= $failure) from accumulate (
+        $evt: HealthcheckEvent(
+            api == $api && endpoint == $endpoint &&
+            (status == HealthcheckEvent.Status.DOWN || status == HealthcheckEvent.Status.TRANSITIONALLY_DOWN))
+            from window ConsecutiveFailuresWindow,
+            count($evt))
+then
+    ConsecutiveFailureAlert alert = new ConsecutiveFailureAlert();
+    alert.setApi($api);
+    alert.setEndpoint($endpoint);
+    alert.setFailures($count.intValue());
+    alerterService.send(alert);
+end
+
+rule "Send an alert if response-time exceeds XXX ms for at least X time(s)"
+when
+    $rule: ResponseTimeExceededRule($api: api, $endpoint: endpoint, $max: max, $counter: counter)
+    $count: Number($cnt : intValue, intValue >= $counter) from accumulate (
+            $evt: HealthcheckEvent(api == $api && endpoint == $endpoint && responseTime > $max)
+                over window:length(5) from entry-point "HealthcheckEvent",
+                count($evt))
+then
+    ResponseTimeExceededAlert alert = new ResponseTimeExceededAlert();
+    alert.setApi($api);
+    alert.setEndpoint($endpoint);
+    alert.setCounter($count.intValue());
+    alerterService.send(alert);
+end
+
+rule "Send an alert if state is different with previous"
+when
+    $evt1: HealthcheckEvent($status: status, $api: api, $endpoint: endpoint) from entry-point "HealthcheckEvent"
+    $evt2: HealthcheckEvent(status != $status && api == $api && endpoint == $endpoint, this after $evt1) from entry-point "HealthcheckEvent"
+then
+    StateChangedAlert alert = new StateChangedAlert();
+    alert.setApi($api);
+    alert.setEndpoint($endpoint);
+    alert.setBefore($evt1.getStatus());
+    alert.setAfter($evt2.getStatus());
+    alerterService.send(alert);
+end

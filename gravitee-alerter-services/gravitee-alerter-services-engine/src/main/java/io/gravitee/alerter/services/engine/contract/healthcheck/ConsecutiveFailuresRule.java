@@ -13,24 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.gravitee.alerter.model.jackson.healthcheck;
-
-import io.gravitee.alerter.model.healthcheck.HealthcheckEvent;
-import io.gravitee.alerter.model.jackson.AbstractTest;
-import org.junit.Assert;
-import org.junit.Test;
+package io.gravitee.alerter.services.engine.contract.healthcheck;
 
 /**
  * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
-public class HealthcheckSerializer extends AbstractTest {
+public class ConsecutiveFailuresRule extends HealtcheckRule {
 
-    @Test
-    public void should_serialize_healthcheck() throws Exception {
-        HealthcheckEvent healthcheckEvent = load("/io/gravitee/alerter/model/jackson/healthcheck.json", HealthcheckEvent.class);
+    private int failure;
 
-        String generatedJsonDefinition = objectMapper().writeValueAsString(healthcheckEvent);
-        Assert.assertNotNull(generatedJsonDefinition);
+    public ConsecutiveFailuresRule(String api) {
+        super(api);
+    }
+
+    public int getFailure() {
+        return failure;
+    }
+
+    public void setFailure(int failure) {
+        this.failure = failure;
     }
 }

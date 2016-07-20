@@ -15,7 +15,7 @@
  */
 package io.gravitee.alerter.model.jackson.healthcheck;
 
-import io.gravitee.alerter.model.healthcheck.HealtcheckEvent;
+import io.gravitee.alerter.model.healthcheck.HealthcheckEvent;
 import io.gravitee.alerter.model.jackson.AbstractTest;
 import org.junit.Assert;
 import org.junit.Test;
@@ -28,9 +28,9 @@ public class HealthcheckDeserializer extends AbstractTest {
 
     @Test
     public void should_deserialize_healthcheck() throws Exception {
-        HealtcheckEvent healtcheckEvent = load("/io/gravitee/alerter/model/jackson/healthcheck.json", HealtcheckEvent.class);
+        HealthcheckEvent healthcheckEvent = load("/io/gravitee/alerter/model/jackson/healthcheck.json", HealthcheckEvent.class);
 
-        Assert.assertNotNull(healtcheckEvent);
-        Assert.assertEquals(HealtcheckEvent.Status.DOWN, healtcheckEvent.getStatus());
+        Assert.assertNotNull(healthcheckEvent);
+        Assert.assertEquals(HealthcheckEvent.Status.DOWN, healthcheckEvent.getStatus());
     }
 }
